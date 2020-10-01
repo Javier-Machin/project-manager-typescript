@@ -5,6 +5,26 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+function validate(validatableInput) {
+    const { value, required, minLength, maxLength, min, max } = validatableInput;
+    let isValid = true;
+    if (required) {
+        isValid = isValid && value.toString().trim().length !== 0;
+    }
+    if (minLength != null && typeof value === 'string') {
+        isValid = isValid && value.trim().length >= minLength;
+    }
+    if (maxLength != null && typeof value === 'string') {
+        isValid = isValid && value.trim().length <= maxLength;
+    }
+    if (min && typeof value === 'number') {
+        isValid = isValid && value >= min;
+    }
+    if (max && typeof value === 'number') {
+        isValid = isValid && value <= max;
+    }
+    return isValid;
+}
 function autobind(target, methodName, descriptor) {
     const originalMethod = descriptor.value;
     const updatedDescriptor = {
@@ -33,13 +53,29 @@ class ProjectInput {
         const enteredTitle = this.titleInputElement.value;
         const enteredDescription = this.descriptionInputElement.value;
         const enteredPeople = this.peopleInputElement.value;
-        if (enteredTitle.trim().length === 0 ||
-            enteredDescription.trim().length === 0 ||
-            enteredPeople.trim().length === 0) {
-            alert('Invalid input, please try again!');
+        const titleValidatable = {
+            value: enteredTitle,
+            required: true,
+        };
+        const descriptionValidatable = {
+            value: enteredDescription,
+            required: true,
+            minLength: 5,
+        };
+        const peopleValidatable = {
+            value: +enteredPeople,
+            min: 1,
+            max: 5,
+            required: true,
+        };
+        const allInputsAreValid = validate(titleValidatable) &&
+            validate(descriptionValidatable) &&
+            validate(peopleValidatable);
+        if (allInputsAreValid) {
+            return [enteredTitle, enteredDescription, +enteredPeople];
         }
         else {
-            return [enteredTitle, enteredDescription, +enteredPeople];
+            alert('Invalid input, please try again!');
         }
     }
     clearInputs() {
