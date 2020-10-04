@@ -7,21 +7,22 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 var App;
 (function (App) {
-    let ProjectStatus;
-    (function (ProjectStatus) {
-        ProjectStatus[ProjectStatus["Active"] = 0] = "Active";
-        ProjectStatus[ProjectStatus["Finished"] = 1] = "Finished";
-    })(ProjectStatus = App.ProjectStatus || (App.ProjectStatus = {}));
-    class Project {
-        constructor(id, title, description, people, status) {
-            this.id = id;
-            this.title = title;
-            this.description = description;
-            this.people = people;
-            this.status = status;
+    class Component {
+        constructor(templateId, hostElementId, insertAtStart, newElementId) {
+            this.templateElement = document.getElementById(templateId);
+            this.hostElement = document.getElementById(hostElementId);
+            const importedNode = document.importNode(this.templateElement.content, true);
+            this.element = importedNode.firstElementChild;
+            if (newElementId) {
+                this.element.id = newElementId;
+            }
+            this.attach(insertAtStart);
+        }
+        attach(insertAtStart) {
+            this.hostElement.insertAdjacentElement(insertAtStart ? 'afterbegin' : 'beforeend', this.element);
         }
     }
-    App.Project = Project;
+    App.Component = Component;
 })(App || (App = {}));
 var App;
 (function (App) {
@@ -63,27 +64,11 @@ var App;
             }
         }
     }
-    const projectState = ProjectState.getInstance();
-    function validate(validatableInput) {
-        const { value, required, minLength, maxLength, min, max, } = validatableInput;
-        let isValid = true;
-        if (required) {
-            isValid = isValid && value.toString().trim().length !== 0;
-        }
-        if (minLength != null && typeof value === 'string') {
-            isValid = isValid && value.trim().length >= minLength;
-        }
-        if (maxLength != null && typeof value === 'string') {
-            isValid = isValid && value.trim().length <= maxLength;
-        }
-        if (min && typeof value === 'number') {
-            isValid = isValid && value >= min;
-        }
-        if (max && typeof value === 'number') {
-            isValid = isValid && value <= max;
-        }
-        return isValid;
-    }
+    App.ProjectState = ProjectState;
+    App.projectState = ProjectState.getInstance();
+})(App || (App = {}));
+var App;
+(function (App) {
     function autobind(target, methodName, descriptor) {
         const originalMethod = descriptor.value;
         const updatedDescriptor = {
@@ -95,22 +80,29 @@ var App;
         };
         return updatedDescriptor;
     }
-    class Component {
-        constructor(templateId, hostElementId, insertAtStart, newElementId) {
-            this.templateElement = document.getElementById(templateId);
-            this.hostElement = document.getElementById(hostElementId);
-            const importedNode = document.importNode(this.templateElement.content, true);
-            this.element = importedNode.firstElementChild;
-            if (newElementId) {
-                this.element.id = newElementId;
-            }
-            this.attach(insertAtStart);
-        }
-        attach(insertAtStart) {
-            this.hostElement.insertAdjacentElement(insertAtStart ? 'afterbegin' : 'beforeend', this.element);
+    App.autobind = autobind;
+})(App || (App = {}));
+var App;
+(function (App) {
+    let ProjectStatus;
+    (function (ProjectStatus) {
+        ProjectStatus[ProjectStatus["Active"] = 0] = "Active";
+        ProjectStatus[ProjectStatus["Finished"] = 1] = "Finished";
+    })(ProjectStatus = App.ProjectStatus || (App.ProjectStatus = {}));
+    class Project {
+        constructor(id, title, description, people, status) {
+            this.id = id;
+            this.title = title;
+            this.description = description;
+            this.people = people;
+            this.status = status;
         }
     }
-    class ProjectItem extends Component {
+    App.Project = Project;
+})(App || (App = {}));
+var App;
+(function (App) {
+    class ProjectItem extends App.Component {
         constructor(hostId, project) {
             super('single-project', hostId, false, project.id);
             this.project = project;
@@ -142,9 +134,13 @@ var App;
         }
     }
     __decorate([
-        autobind
+        App.autobind
     ], ProjectItem.prototype, "dragStartHandler", null);
-    class ProjectList extends Component {
+    App.ProjectItem = ProjectItem;
+})(App || (App = {}));
+var App;
+(function (App) {
+    class ProjectList extends App.Component {
         constructor(type) {
             super('project-list', 'app', false, `${type}-projects`);
             this.type = type;
@@ -166,13 +162,13 @@ var App;
         dragDropHandler(event) {
             const projectId = event.dataTransfer.getData('text/plain');
             const newStatus = this.type === 'active' ? App.ProjectStatus.Active : App.ProjectStatus.Finished;
-            projectState.moveProject(projectId, newStatus);
+            App.projectState.moveProject(projectId, newStatus);
         }
         configure() {
             this.element.addEventListener('dragover', this.dragOverHandler);
             this.element.addEventListener('dragleave', this.dragLeaveHandler);
             this.element.addEventListener('drop', this.dragDropHandler);
-            projectState.addListener((projects) => {
+            App.projectState.addListener((projects) => {
                 this.assignedProjects = [];
                 const relevantProjects = projects.filter((prj) => {
                     if (this.type === 'active') {
@@ -194,20 +190,48 @@ var App;
             const listEl = document.getElementById(`${this.type}-projects-list`);
             listEl.innerHTML = '';
             for (const prjItem of this.assignedProjects) {
-                new ProjectItem(this.element.querySelector('ul').id, prjItem);
+                new App.ProjectItem(this.element.querySelector('ul').id, prjItem);
             }
         }
     }
     __decorate([
-        autobind
+        App.autobind
     ], ProjectList.prototype, "dragOverHandler", null);
     __decorate([
-        autobind
+        App.autobind
     ], ProjectList.prototype, "dragLeaveHandler", null);
     __decorate([
-        autobind
+        App.autobind
     ], ProjectList.prototype, "dragDropHandler", null);
-    class ProjectInput extends Component {
+    App.ProjectList = ProjectList;
+})(App || (App = {}));
+var App;
+(function (App) {
+    function validate(validatableInput) {
+        const { value, required, minLength, maxLength, min, max, } = validatableInput;
+        let isValid = true;
+        if (required) {
+            isValid = isValid && value.toString().trim().length !== 0;
+        }
+        if (minLength != null && typeof value === 'string') {
+            isValid = isValid && value.trim().length >= minLength;
+        }
+        if (maxLength != null && typeof value === 'string') {
+            isValid = isValid && value.trim().length <= maxLength;
+        }
+        if (min && typeof value === 'number') {
+            isValid = isValid && value >= min;
+        }
+        if (max && typeof value === 'number') {
+            isValid = isValid && value <= max;
+        }
+        return isValid;
+    }
+    App.validate = validate;
+})(App || (App = {}));
+var App;
+(function (App) {
+    class ProjectInput extends App.Component {
         constructor() {
             super('project-input', 'app', true, 'user-input');
             this.titleInputElement = this.element.querySelector('#title');
@@ -238,9 +262,9 @@ var App;
                 max: 5,
                 required: true,
             };
-            const allInputsAreValid = validate(titleValidatable) &&
-                validate(descriptionValidatable) &&
-                validate(peopleValidatable);
+            const allInputsAreValid = App.validate(titleValidatable) &&
+                App.validate(descriptionValidatable) &&
+                App.validate(peopleValidatable);
             if (allInputsAreValid) {
                 return [enteredTitle, enteredDescription, +enteredPeople];
             }
@@ -258,16 +282,20 @@ var App;
             const userInput = this.gatherUserInput();
             if (Array.isArray(userInput)) {
                 const [title, description, people] = userInput;
-                projectState.addProject(title, description, people);
+                App.projectState.addProject(title, description, people);
                 this.clearInputs();
             }
         }
     }
     __decorate([
-        autobind
+        App.autobind
     ], ProjectInput.prototype, "submitHandler", null);
-    new ProjectInput();
-    new ProjectList('active');
-    new ProjectList('finished');
+    App.ProjectInput = ProjectInput;
+})(App || (App = {}));
+var App;
+(function (App) {
+    new App.ProjectInput();
+    new App.ProjectList('active');
+    new App.ProjectList('finished');
 })(App || (App = {}));
 //# sourceMappingURL=bundle.js.map
